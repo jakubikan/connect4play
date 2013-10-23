@@ -1,10 +1,9 @@
 package controllers;
 
-import play.*;
-import play.mvc.*;
-
-import views.html.*;
 import connectfour.controller.GameController;
+import play.mvc.Controller;
+import play.mvc.Result;
+import connectfour.model.Player;
 
 
 
@@ -12,11 +11,9 @@ public class Application extends Controller {
 
     public static Result index() {
 
-        GameController g = GameController.getInstance();
-
-        g.newGame();
-
-        return ok(index.render("Your new application is ready."));
+        GameController gc = GameController.getInstance();
+        gc.newGame();
+        return ok(views.html.gamefield.render(gc.getPlayer(),gc.getOpponend(), gc.getGameField()));
     }
 
 }

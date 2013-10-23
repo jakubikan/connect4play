@@ -1,0 +1,1 @@
+window.Connectfour = Ember.Application.create();

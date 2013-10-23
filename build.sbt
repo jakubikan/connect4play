@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
     "org.webjars" % "bootstrap" % "3.0.0",
     "org.webjars" % "jquery" % "2.0.3-1",
     "org.webjars" % "emberjs" % "1.0.pre",
-    "org.webjars" % "coffee-script" % "1.6.3",
+    "org.webjars" % "emberjs-data" % "0.14",
     "de.stejack" % "connect4plus" % "1.0-SNAPSHOT"
 )
 
