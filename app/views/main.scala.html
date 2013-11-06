@@ -5,13 +5,98 @@
 <html>
     <head>
         <title>@title</title>
-        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
-       <script data-main='@routes.Assets.at("javascripts/main.js")' type='text/javascript' src='@routes.WebJarAssets.requirejs()'></script>
-        <script src="@routes.Assets.at("javascripts/main.js")"></script>
+        <link rel="stylesheet" media="screen" href='@routes.Assets.at("stylesheets/main.css")'>
+        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.min.css"))'>
 
 
+        <script type='text/javascript' src='@routes.Assets.at("javascripts/jquery-1.9.0.min.js")'></script>
+        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("js/bootstrap.min.js"))'></script>
+        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("handlebars.js"))'></script>
+        <script type='text/javascript' src='@routes.Assets.at("javascripts/ember.js")'></script>
+        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("ember-data.js"))'></script>
+
+        <script type="text/javascript">
+
+            Handlebars.registerHelper("debug", function(optionalValue) {
+                console.log("Current Context");
+                console.log("====================");
+                console.log(this);
+
+                if (optionalValue) {
+                    console.log("Value");
+                    console.log("====================");
+                    console.log(optionalValue);
+                }
+            });
+
+
+            Handlebars.registerHelper('ifc', function (v1, operator, v2, options) {
+
+                switch (operator) {
+                    case '==':
+                        return (v1 == v2) ? options.fn(this) : options.inverse(this);
+                    case '===':
+                        return (v1 === v2) ? options.fn(this) : options.inverse(this);
+                    case '<':
+                        return (v1 < v2) ? options.fn(this) : options.inverse(this);
+                    case '<=':
+                        return (v1 <= v2) ? options.fn(this) : options.inverse(this);
+                    case '>':
+                        return (v1 > v2) ? options.fn(this) : options.inverse(this);
+                    case '>=':
+                        return (v1 >= v2) ? options.fn(this) : options.inverse(this);
+                    default:
+                        return options.inverse(this);
+                }
+            });
+        </script>
+
+        <script src='@routes.Assets.at("javascripts/main.js")'></script>
+
+        <script type="text/x-handlebars">    
+            <div class="navbar navbar-static-top">      
+                <div class="navbar-inner">
+                    <a class="brand" href="#">Connectfour</a>        
+                    <form class="navbar-form pull-left">
+                        {{log this}}
+                        {{input type="text" value=gameName placeholder="Enter Game Name" size="50" }}
+                        {{#link-to 'games.new' gameName class="btn"}} New {{/link-to}}
+                    </form>
+
+                    <form class="navbar-form pull-right">
+                        {{input type="text" value=saveGame placeholder="Enter Save/Load Name" size="50" }}
+                        {{#link-to 'games.save' saveGame class="btn"}} Save {{/link-to}}
+                        {{#link-to 'games.load' saveGame class="btn"}} Load {{/link-to}}
+                    </form>
+                </div>    
+            </div>
+            {{outlet}}
+        </script>
+
+        <script type="text/x-handlebars" id="games/play">    
+            <div class="container">
+                {{log gameField}}
+                {{#each gameField}}
+                    <div class="row-fluid">
+                        {{#each this}}
+                            {{this}}
+                        {{/each}}
+
+                    </div>
+                {{/each}}
+                <div class="row-fluid">
+                    <button {{action "dropCoin" 0 view }} class="btn span1">Drop</button>
+                    <button {{action "dropCoin" 1 view }} class="btn span1">Drop</button>
+                    <button {{action "dropCoin" 2 view }} class="btn span1">Drop</button>
+                    <button {{action "dropCoin" 3 view }} class="btn span1">Drop</button>
+                    <button {{action "dropCoin" 4 view }} class="btn span1">Drop</button>
+                    <button {{action "dropCoin" 5 view }} class="btn span1">Drop</button>
+                    <button {{action "dropCoin" 6 view }} class="btn span1">Drop</button>
+                </div>
+            </div>
+        </script>
     </head>
     <body>
-        @content
+    @content
     </body>
 </html>

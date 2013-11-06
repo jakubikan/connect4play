@@ -3,10 +3,32 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index()
+GET        /                     controllers.Application.index()
+
+
+# Find One
+GET        /api/games/:gameName                             controllers.api.Game.getGameField(gameName: String)
+# Find All
+GET        /api/games                                       controllers.api.Game.getGameFields()
+# Create
+POST       /api/games                                       controllers.api.Game.newGameWithoutName()
+
+
+
+# Action DropCoin
+GET        /api/games/:gameName/dropcoin/:column            controllers.api.Game.dropCoin(gameName:String, column: Integer)
+
+
+
+# save game
+GET        /api/games/:gameName/save/:saveGame              controllers.api.Game.saveGame(gameName:String, saveGame: String)
+# load game
+GET        /api/games/:gameName/load/:saveGame              controllers.api.Game.loadGame(gameName:String, saveGame: String)
+# All Saved Games
+GET        /api/savedGames                                  controllers.api.Game.getSavedGames()
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET        /assets/*file         controllers.Assets.at(path="/public", file)
 
-GET     /webjars/*file              controllers.WebJarAssets.at(file)
+GET        /webjars/*file        controllers.WebJarAssets.at(file)
 

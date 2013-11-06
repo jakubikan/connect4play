@@ -4,16 +4,13 @@ import connectfour.controller.GameController;
 import play.mvc.Controller;
 import play.mvc.Result;
 import connectfour.model.Player;
-
+import views.html.index;
 
 
 public class Application extends Controller {
 
     public static Result index() {
-
-        GameController gc = GameController.getInstance();
-        gc.newGame();
-        return ok(views.html.gamefield.render(gc.getPlayer(),gc.getOpponend(), gc.getGameField()));
+        return ok(index.render("Connect 4 Pl(us/ay)"));
     }
 
 }
