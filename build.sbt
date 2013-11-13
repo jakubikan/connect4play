@@ -9,6 +9,8 @@ resolvers += "stejack-connect4" at "http://lenny2.in.htwg-konstanz.de:8081/artif
 
 resolvers += "db4omaverepositories" at "http://source.db4o.com/maven"
 
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
 libraryDependencies ++= Seq(
     javaJdbc,
     javaEbean,

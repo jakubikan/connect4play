@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import connectfour.controller.GameController;
 import connectfour.controller.GameField;
+import connectfour.controller.IController;
 import connectfour.model.Computer;
 import connectfour.model.Human;
 import connectfour.model.Player;
@@ -21,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static play.data.Form.form;
 
@@ -35,17 +38,18 @@ public class Game extends Controller {
 
     @Inject
     private static ISaveGameDAO saveGameDAO;
-    private static HashMap<String, GameController> gameSaveing = new HashMap<>();
+
+    private static Map<String, GameController> gamesMap = new ConcurrentHashMap<>();
+
 
     @BodyParser.Of(BodyParser.Json.class)
     public static Result newGameWithoutName() {
         DynamicForm requestData = form().bindFromRequest();
-
         Result result;
         if (requestData.field("game") != null) {
 
             Form.Field f =requestData.field("game");
-            result = newGameWithName(f.sub("name").value());
+            result = newGameWithName(f.sub("id").value());
 
         } else {
             result = newGameWithName(UUID.randomUUID().toString());
@@ -72,40 +76,44 @@ public class Game extends Controller {
         c.setPlayer(player);
         c.setOpponend(opponent);
         c.newGame();
-        ObjectNode node = Json.newObject();
-        ObjectNode a = node.putObject("game");
-        a.put("name", gameName);
-        a.putArray("game_field");
-        if (!gameSaveing.containsKey(gameName)) {
-            gameSaveing.put(gameName, c);
-            return ok(node);
+        GameController controller = c;
+        if (gamesMap.containsKey(gameName)) {
+            controller = gamesMap.get(gameName);
         }
-        return badRequest();
-
+        ObjectNode node = Json.newObject();
+        gamesMap.put(gameName, controller);
+        ObjectNode a = node.putObject("game");
+        a.put("id", gameName);
+        a.putArray("game_field");
+        return ok(node);
     }
 
     public static Result dropCoin(String gameName, int column) {
-        GameController c = gameSaveing.get(gameName);
-        boolean success = c.dropCoinWithSuccessFeedback(column);
         ObjectNode node = Json.newObject();
-        if (success)
-            node.put("dropped", true);
-        else
+        if (gamesMap.containsKey(gameName) ) {
+            IController controller =  gamesMap.get(gameName);
+            boolean success = controller.dropCoinWithSuccessFeedback(column);
+            if (success)
+                node.put("dropped", true);
+            else
+                node.put("dropped", false);
+        } else {
             node.put("dropped", false);
+        }
+
 
         return ok(node);
     }
 
     @BodyParser.Of(BodyParser.Json.class)
     public static Result getGameField(String gameName) {
-        if (gameSaveing.containsKey(gameName)) {
-            GameController controller = gameSaveing.get(gameName);
+        if (gamesMap.containsKey(gameName)) {
+            IController controller = gamesMap.get(gameName);
             ObjectNode node = Json.newObject();
-            node.put("game",gameFieldToJsonNode(gameName, controller));
+            node.put("game", gameFieldToJsonNode(gameName, controller));
             return ok(node);
 
         }
-
         return badRequest();
     }
 
@@ -113,12 +121,10 @@ public class Game extends Controller {
     public static Result getGameFields() {
         ObjectNode node = Json.newObject();
         ArrayNode a = node.putArray("games");
-        for (Map.Entry<String, GameController> s : gameSaveing.entrySet()) {
-            ObjectNode o = a.addObject();
-            o.put("name", s.getKey());
-            o.put("game_field",gameFieldToJsonNode(s.getKey(), s.getValue()));
+        for (Map.Entry<String, GameController> s : gamesMap.entrySet()) {
+            a.add(gameFieldToJsonNode(s.getKey(),s.getValue()));
         }
-        return ok(node);
+       return ok(node);
 
     }
 
@@ -130,7 +136,7 @@ public class Game extends Controller {
     }
 
     public static Result loadGame(String gameName, String loadGameName) {
-        GameController controller = gameSaveing.get(gameName);
+        IController controller = gamesMap.get(gameName);
         controller.loadSaveGame(gameName);
         ObjectNode node = Json.newObject();
         node.put("loaded", true);
@@ -138,18 +144,18 @@ public class Game extends Controller {
     }
 
     public static Result saveGame(String gameName, String saveGameName) {
-        GameController controller = gameSaveing.get(gameName);
+        IController controller = gamesMap.get(gameName);
         controller.saveGame(gameName);
         ObjectNode node = Json.newObject();
         node.put("saved", true);
         return ok(node);
     }
 
-    private static ObjectNode gameFieldToJsonNode(String gameName, GameController c) {
+    private static ObjectNode gameFieldToJsonNode(String gameName, IController c) {
         try {
             Player[][] gameField = c.getGameField().getCopyOfGamefield();
             ObjectNode node = Json.newObject();
-            node.put("name", gameName);
+            node.put("id", gameName);
             ArrayNode gameArrayNode = node.putArray("game_field");
             for (Player[] rows : gameField) {
                 ArrayNode rowsNode = gameArrayNode.addArray();

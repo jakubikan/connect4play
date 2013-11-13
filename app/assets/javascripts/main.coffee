@@ -1,74 +1,71 @@
 window.Connectfour = Ember.Application.create( {
   LOG_TRANSITIONS: true
+  LOG_ACTIVE_GENERATION: true,
+  LOG_MODULE_RESOLVER: true,
+  LOG_TRANSITIONS: true,
+  LOG_TRANSITIONS_INTERNAL: true,
+  LOG_VIEW_LOOKUPS: true,
 });
 
 Connectfour.Router.reopen {
   rootURL: '/api/'
 }
 
-
-
-Connectfour.Store = DS.Store.extend {
-  revision: 12
-}
-
-
-
 DS.RESTAdapter.reopen({
   namespace: 'api'
 });
 
+
 Connectfour.Router.map  ->
   @resource "games", ->
-    @route "new", {path: "new/:name"}
-    @route "play", {path: "/:name"}
+    @route "new", {path: "new/:id"}
+    @route "play", {path: "/:id"}
     @route "dropcoin", {path: ":name/dropCoin/:column"}
-    @route "save", {path: "save/:name"}
-    @route "load", {path: "load/:name"}
+    @route "save", {path: "save/:id"}
+    @route "load", {path: "load/:id"}
 
-DS.RESTAdapter.registerTransform 'raw', {
-  deserialize: (serialized) ->
-    return serialized;
 
-  serialize: (deserialized) ->
-    return deserialized;
-}
 
 Connectfour.Game = DS.Model.extend {
-  name: DS.attr "string"
-  gameField: DS.attr "raw"
+  game_field: DS.attr ""
+
 }
 
-Connectfour.Games = DS.Model.extend {
-  games: DS.hasMany "Connectfour.Game"
+
+Connectfour.IndexRoute = Ember.Route.extend {
+  model: () ->
+    @transitionTo "games.index"
+
 }
 
 Connectfour.GamesRoute = Ember.Route.extend {
-  model: (params) ->
+  model: () ->
+    @store.find "game"
+
 }
 
+Connectfour.GamesIndexRoute = Ember.Route.extend {
+  model: () ->
+    @store.find "game"
+
+}
 
 
 Connectfour.GamesNewRoute = Ember.Route.extend {
   model: (params)->
-    store = @get "store"
-    newGameObj = {
-      name: params.name
-      gameField: []
-    }
-    newGame = Connectfour.Game.createRecord (newGameObj)
-    newGame.save();
-    return newGame;
+    @store.createRecord "game", params
 
-  setupController: (controller, model) ->
-    controller.set 'model', model
+  setupController: ( controller, model ) ->
+    route = this
 
-  afterModel: (params, a, b, c)->
-    store = @get "store"
-    game = store.find "game", a.params.name
-    @transitionTo "games.play", game
+    model = @modelFor("gamesNew").save().then((params) ->
+      route.transitionTo('games.play');
+    , ->
+      console.log "failing save", this
+    )
 
 }
+
 
 Connectfour.GamesLoadRoute = Ember.Route.extend {
   model: (params) ->
@@ -81,16 +78,22 @@ Connectfour.GamesSaveRoute = Ember.Route.extend {
 
 Connectfour.GamesPlayRoute = Ember.Route.extend {
   model: (params) ->
-    store = @get "store"
-    return store.find "game", params.name
-  setupController: (controller, model) ->
-    controller.set('model', model);
+    @store.find "game", params.id
   actions: {
     dropCoin: (column, view) ->
-      $.getJSON "/api/games/#{@currentModel.id}/dropcoin/#{column}"
-      view.propertyDidChange()
-      view.rerender()
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/dropcoin/#{column}"
+        async:false
+      }
+      @currentModel.reload()
+
   }
+
+}
+
+Connectfour.GameRoute = Ember.Route.extend {
+  model: (params) ->
+    @store.find "game", params.name
 
 }
 
