@@ -12,6 +12,7 @@ import connectfour.model.Computer;
 import connectfour.model.Human;
 import connectfour.model.Player;
 import connectfour.persistence.ISaveGameDAO;
+import org.apache.commons.lang3.ArrayUtils;
 import play.data.DynamicForm;
 import play.data.Form;
 import play.libs.Json;
@@ -19,10 +20,7 @@ import play.mvc.BodyParser;
 import play.mvc.Controller;
 import play.mvc.Result;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static play.data.Form.form;
@@ -154,6 +152,7 @@ public class Game extends Controller {
     private static ObjectNode gameFieldToJsonNode(String gameName, IController c) {
         try {
             Player[][] gameField = c.getGameField().getCopyOfGamefield();
+            ArrayUtils.reverse(gameField);
             ObjectNode node = Json.newObject();
             node.put("id", gameName);
             ArrayNode gameArrayNode = node.putArray("game_field");

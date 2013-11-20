@@ -6,11 +6,11 @@
     <head>
         <title>@title</title>
         <link rel="stylesheet" media="screen" href='@routes.Assets.at("stylesheets/main.css")'>
-        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.min.css"))'>
+        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.css"))'>
 
 
         <script type='text/javascript' src='@routes.Assets.at("javascripts/jquery-1.9.0.min.js")'></script>
-        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("js/bootstrap.min.js"))'></script>
+        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("js/bootstrap.js"))'></script>
         <script type='text/javascript' src='@routes.Assets.at("javascripts/handlebars-v1.1.2.js")'></script>
         <script type='text/javascript' src='@routes.Assets.at("javascripts/ember.js")'></script>
         <script type='text/javascript' src='@routes.Assets.at("javascripts/ember-data.js")'></script>
@@ -86,23 +86,24 @@
 
         <script type="text/x-handlebars" id="games/play">    
             <div class="container">
-                {{#each game_field}}
-                    <div class="row-fluid ">
+                    <div class="row-fluid">
+                        <button {{action "dropCoin" 0 view }} class="btn span1 offset2">Drop</button>
+                        <button {{action "dropCoin" 1 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 2 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 3 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 4 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 5 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 6 view }} class="btn span1 ">Drop</button>
+                    </div>
+                    {{#each game_field}}
+                    <div class="row-fluid gamefield">
+                        <span class="span1 offset1"></span>
                         {{#each this}}
-                            <span class="span1 {{this}}"> {{this}}</span>
+                        <span class="span1 {{this}} gametoken "></span>
                         {{/each}}
 
                     </div>
-                {{/each}}
-                <div class="row-fluid">
-                    <button {{action "dropCoin" 0 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 1 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 2 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 3 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 4 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 5 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 6 view }} class="btn span1">Drop</button>
-                </div>
+                    {{/each}}
             </div>
         </script>
     </head>
