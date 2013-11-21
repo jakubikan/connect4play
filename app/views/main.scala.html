@@ -62,14 +62,12 @@
                         {{#link-to 'games.new' gameName class="btn"}} New {{/link-to}}
                     </form>
 
-                    <form class="navbar-form pull-right">
-                        {{input type="text" value=saveGame placeholder="Enter Save/Load Name" size="50" }}
-                        {{#link-to 'games.save' saveGame class="btn"}} Save {{/link-to}}
-                        {{#link-to 'games.load' saveGame class="btn"}} Load {{/link-to}}
-                    </form>
                 </div>    
             </div>
             {{outlet}}
+        </script>
+
+        <script type="text/x-handlebars" id="saveLoadgame" >
         </script>
 
         <script type="text/x-handlebars" id="games/index">    
@@ -85,6 +83,19 @@
         </script>
 
         <script type="text/x-handlebars" id="games/play">    
+            <div class="nav nav-list pull-right">
+                <button class ="btn" {{action undo view }}><i class="icon-arrow-left"></i>Undo</button>
+                <button class ="btn" {{action redo view }}>Redo <i class="icon-arrow-right"></i></button>
+                <form class="navbar-form" >
+                    {{input type="text" class="input-medium" value=saveGame placeholder="Enter Save/Load Name" size="50" }}
+                    <button class ="btn" {{action save saveGame view }}>
+                    Save
+                    </button>
+                    <button class ="btn" {{action load saveGame view}}>
+                    Load
+                    </button>
+                </form>
+            </div>
             <div class="container">
                     <div class="row-fluid">
                         <button {{action "dropCoin" 0 view }} class="btn span1 offset2">Drop</button>

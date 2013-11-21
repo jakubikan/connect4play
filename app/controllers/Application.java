@@ -1,15 +1,18 @@
 package controllers;
 
-import connectfour.controller.GameController;
+import com.google.inject.Inject;
+import connectfour.persistence.ISaveGameDAO;
 import play.mvc.Controller;
 import play.mvc.Result;
-import connectfour.model.Player;
 import views.html.index;
 
 
 public class Application extends Controller {
 
-    public static Result index() {
+    @Inject
+    ISaveGameDAO s;
+
+    public Result index() {
         return ok(index.render("Connect 4 Pl(us/ay)"));
     }
 

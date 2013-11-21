@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
     "org.webjars" % "webjars-locator" % "0.5",
     "org.webjars" % "bootstrap" % "2.3.2",
     "org.webjars" % "jquery" % "2.0.3-1",
+    "com.google.inject" % "guice" % "4.0-beta",
     "de.stejack" % "connect4plus" % "1.0-SNAPSHOT"
 )
 

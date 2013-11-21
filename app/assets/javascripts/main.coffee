@@ -21,8 +21,9 @@ Connectfour.Router.map  ->
     @route "new", {path: "new/:id"}
     @route "play", {path: "/:id"}
     @route "dropcoin", {path: ":name/dropCoin/:column"}
-    @route "save", {path: "save/:id"}
-    @route "load", {path: "load/:id"}
+    @route "save", {path: ":id/save/:saveGame"}
+    @route "load", {path: ":id/load/:saveGame"}
+  @route "saveGames"
 
 
 
@@ -67,14 +68,6 @@ Connectfour.GamesNewRoute = Ember.Route.extend {
 }
 
 
-Connectfour.GamesLoadRoute = Ember.Route.extend {
-  model: (params) ->
-}
-
-
-Connectfour.GamesSaveRoute = Ember.Route.extend {
-  model: (params) ->
-}
 
 Connectfour.GamesPlayRoute = Ember.Route.extend {
   model: (params) ->
@@ -86,7 +79,31 @@ Connectfour.GamesPlayRoute = Ember.Route.extend {
         async:false
       }
       @currentModel.reload()
+    save: (name)->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/save/#{name}"
+        async:false
+      }
 
+    load: (name)->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/load/#{name}"
+        async:false
+      }
+      @currentModel.reload()
+    undo: ->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/undo"
+        async:false
+      }
+      @currentModel.reload()
+
+    redo: ->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/redo"
+        async:false
+      }
+      @currentModel.reload()
   }
 
 }

@@ -1,8 +1,4 @@
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
+import com.google.inject.*;
 import connectfour.controller.GameController;
 import connectfour.controller.IController;
 import connectfour.persistence.ISaveGameDAO;
@@ -22,24 +18,27 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Global extends GlobalSettings {
 
-    private Injector injector;
+    private static Injector injector = createInjector();
+
+
 
     @Override
-    public void onStart(Application application) {
-        injector = Guice.createInjector(new AbstractModule() {
+    public <A> A getControllerInstance(Class<A> aClass) throws Exception {
+        return injector.getInstance(aClass);
+    }
+
+
+    private static Injector createInjector() {
+        return Guice.createInjector(new AbstractModule() {
             @Override
             protected void configure() {
-
-
-                bind(IController.class).to(GameController.class);
-                bind(ISaveGameDAO.class).to(SaveGameDb4oDAO.class);
+                bind(ISaveGameDAO.class).to(SaveGameDb4oDAO.class).in(Scopes.SINGLETON);
+                bind(IController.class).to(GameController.class).in(Scopes.NO_SCOPE);
+                bind(new TypeLiteral<Map<String,GameController>>(){})
+                        .to(new TypeLiteral<ConcurrentHashMap<String, GameController>>(){})
+                        .in(Scopes.SINGLETON);
 
             }
         });
-    }
-
-    @Override
-    public <T> T getControllerInstance(Class<T> aClass) throws Exception {
-        return injector.getInstance(aClass);
     }
 }
