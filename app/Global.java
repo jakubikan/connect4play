@@ -8,6 +8,7 @@ import connectfour.persistence.couchdb.SaveGameCouchDbDAO;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import connectfour.persistence.db4o.SaveGameDb4oDAO;
 import connectfour.ui.gui.swing.SwingGUI;
 import connectfour.ui.tui.TUI;
 import connectfour.util.observer.IObserver;
@@ -37,7 +38,7 @@ public class Global  extends GlobalSettings {
         return Guice.createInjector(new AbstractModule() {
             @Override
             protected void configure() {
-                bind(ISaveGameDAO.class).to(SaveGameCouchDbDAO.class).in(Scopes.SINGLETON);
+                bind(ISaveGameDAO.class).to(SaveGameDb4oDAO.class).in(Scopes.SINGLETON);
                 bind(IController.class).to(GameController.class).in(Scopes.NO_SCOPE);
                 bind(new TypeLiteral<Map<String, GameModel>>(){})
                         .to(new TypeLiteral<ConcurrentHashMap<String, GameModel>>(){})
