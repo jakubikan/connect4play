@@ -51,6 +51,13 @@
             });
         </script>
 
+        <script>
+            Ember.Handlebars.helper('object', function(value, options) {
+
+            });
+
+        </script>
+
         <script src='@routes.Assets.at("javascripts/main.js")'></script>
 
         <script type="text/x-handlebars">    
@@ -59,7 +66,8 @@
                     <a class="brand" href="#">Connectfour</a>        
                     <form class="navbar-form pull-left">
                         {{input type="text" value=gameName placeholder="Enter Game Name" size="50" }}
-                        {{#link-to 'games.new' gameName class="btn"}} New {{/link-to}}
+                        <span>Play agains other Player {{input type="checkbox" name=pvp value=pvp checked=pvp}}</span>
+                        <button class="btn" {{action newGame gameName pvp}}>New</button>
                     </form>
 
                 </div>    
@@ -67,22 +75,31 @@
             {{outlet}}
         </script>
 
-        <script type="text/x-handlebars" id="saveLoadgame" >
-        </script>
-
         <script type="text/x-handlebars" id="games/index">    
-            <ul>
-                {{log this}}
-                {{#each game}}
-                <li>{{#link-to 'games.play' this.name class="btn"}}Join {{this.name}} {{/link-to}} </li>
-                {{else}}
-                No Games available
-                {{/each}}
-            </ul>
+            <div class="container">
+                <h2>Play against other player !!</h2>
+                <ul>
+                    {{#each gameIndexController="games"}}
+                    {{#if this.isPlayerVsPlayer }}
+                    {{#if this.isWaitingForOpponent}}
+                        <li>
+                            <button class ="btn" {{action joinGame this.id view }}>
+                            Join Game
+                            </button>
+                            {{this.id}}
+                        </li>
+                    {{/if}}
+                    {{/if}}
+                    {{else}}
+                    No Games available
+                    {{/each}}
+                </ul>
+            </div>
 
         </script>
 
         <script type="text/x-handlebars" id="games/play">    
+            {{#unless  this.isPlayerVsPlayer}}
             <div class="nav nav-list pull-right">
                 <button class ="btn" {{action undo view }}><i class="icon-arrow-left"></i>Undo</button>
                 <button class ="btn" {{action redo view }}>Redo <i class="icon-arrow-right"></i></button>
@@ -96,6 +113,7 @@
                     </button>
                 </form>
             </div>
+            {{/unless}}
             <div class="container">
                     <div class="row-fluid">
                         <button {{action "dropCoin" 0 view }} class="btn span1 offset2">Drop</button>

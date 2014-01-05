@@ -5,6 +5,12 @@ window.Connectfour = Ember.Application.create( {
   LOG_TRANSITIONS: true,
   LOG_TRANSITIONS_INTERNAL: true,
   LOG_VIEW_LOOKUPS: true,
+  ready: () ->
+    setInterval(() ->
+      Connectfour.Game.refresh()
+    , 1000)
+    this._super()
+
 });
 
 Connectfour.Router.reopen {
@@ -29,37 +35,58 @@ Connectfour.Router.map  ->
 
 Connectfour.Game = DS.Model.extend {
   game_field: DS.attr ""
+  isPlayerVsPlayer: DS.attr "boolean"
+  isWaitingForOpponent: DS.attr "boolean"
+  gameStarted: DS.attr "boolean"
 
 }
 
+Connectfour.StandartActions = Ember.Route.extend {
+  actions: {
+    newGame: (gameName, pvp)  ->
+      params = {
+        id: gameName
+        isPlayerVsPlayer: pvp
+      }
+      @transitionTo("games.new", params);
 
-Connectfour.IndexRoute = Ember.Route.extend {
-  model: () ->
+  }
+}
+
+Connectfour.IndexRoute = Connectfour.StandartActions.extend {
+  model: ->
     @transitionTo "games.index"
-
 }
 
-Connectfour.GamesRoute = Ember.Route.extend {
-  model: () ->
+
+Connectfour.GamesIndexRoute = Connectfour.StandartActions.extend {
+  model: ->
     @store.find "game"
-
+  actions: {
+    joinGame: (id, view) ->
+      $.ajax {
+        url:"/api/games/#{id}/joinGame"
+        async:false
+      }
+      @transitionTo "games.play", id
+  }
 }
 
-Connectfour.GamesIndexRoute = Ember.Route.extend {
-  model: () ->
-    @store.find "game"
 
-}
-
-
-Connectfour.GamesNewRoute = Ember.Route.extend {
+Connectfour.GamesNewRoute = Connectfour.StandartActions.extend {
   model: (params)->
     @store.createRecord "game", params
 
   setupController: ( controller, model ) ->
     route = this
+    m = @modelFor("gamesNew")
+    if typeof  m.save != 'function'
+      if !m.isPlayerVsPlayer
+        m.isPlayerVsPlayer = false;
+      m = @store.createRecord "game", m
+      route.transitionTo('games.play');
 
-    model = @modelFor("gamesNew").save().then((params) ->
+    model = m.save().then((params) ->
       route.transitionTo('games.play');
     , ->
       console.log "failing save", this
@@ -68,8 +95,19 @@ Connectfour.GamesNewRoute = Ember.Route.extend {
 }
 
 
+Connectfour.GamePoll = {
+  start:  ->
+    @timer = setInterval @onPoll.bind(this), 500
+  stop: ->
+    clearInterval @timer
+  onPoll: ->
+    Connectfour.Game.refresh();
+};
 
-Connectfour.GamesPlayRoute = Ember.Route.extend {
+
+
+
+Connectfour.GamesPlayRoute = Connectfour.StandartActions.extend {
   model: (params) ->
     @store.find "game", params.id
   actions: {
@@ -108,11 +146,14 @@ Connectfour.GamesPlayRoute = Ember.Route.extend {
 
 }
 
-Connectfour.GameRoute = Ember.Route.extend {
+
+Connectfour.GameRoute = Connectfour.StandartActions.extend {
   model: (params) ->
     @store.find "game", params.name
 
 }
+
+
 
 
 

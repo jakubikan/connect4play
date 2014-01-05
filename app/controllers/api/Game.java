@@ -2,6 +2,7 @@ package controllers.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
@@ -13,7 +14,10 @@ import connectfour.model.Human;
 import connectfour.model.Player;
 import connectfour.model.SaveGame;
 import connectfour.persistence.ISaveGameDAO;
+import connectfour.util.observer.IObserverWithArguments;
+import models.GameModel;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import play.data.DynamicForm;
 import play.data.Form;
 import play.libs.Json;
@@ -45,7 +49,7 @@ public class Game extends Controller {
     private ISaveGameDAO saveGameDAO;
 
     @Inject
-    private Map<String, GameController> gamesMap = new ConcurrentHashMap<>();
+    private Map<String, GameModel> gamesMap = new ConcurrentHashMap<>();
 
     @BodyParser.Of(BodyParser.Json.class)
     public Result newGameWithoutName() {
@@ -54,17 +58,21 @@ public class Game extends Controller {
         if (requestData.field("game") != null) {
 
             Form.Field f = requestData.field("game");
-            result = newGameWithName(f.sub("id").value());
+            String playerVsPlayer =  f.sub("isPlayerVsPlayer").value();
+            if (StringUtils.contains(playerVsPlayer, "true"))
+                result = newGameWithName(f.sub("id").value(), true);
+            else
+                result = newGameWithName(f.sub("id").value(), false);
 
         } else {
-            result = newGameWithName(UUID.randomUUID().toString());
+            result = newGameWithName(UUID.randomUUID().toString(), false);
 
         }
         return result;
     }
 
     @BodyParser.Of(BodyParser.Json.class)
-    public Result newGameWithName(String gameName) {
+    public Result newGameWithName(String gameName, boolean isPlayerVsPlayer) {
         IController controller = null;
         try {
             controller = GameController.class.newInstance();
@@ -74,42 +82,78 @@ public class Game extends Controller {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
         System.out.println(controller);
-        Player player = new Human();
-        player.setName("You");
-        Player computer = new Computer((GameController)controller);
-        player.setName("Computer");
-        Result result = newGame(gameName, player, computer, (GameController) controller);
+        GameModel gameModel;
+        if (!isPlayerVsPlayer) {
+            gameModel = new GameModel(controller);
+        } else {
+            Player player = new Human("You");
+            gameModel = new GameModel(controller, player);
+        }
+        Result result = newGame(gameName, gameModel);
 
         return result;
 
     }
 
+
+
     @BodyParser.Of(BodyParser.Json.class)
-    public Result newGame(String gameName, Player player, Player opponent, GameController c) {
-        c.setPlayer(player);
-        c.setOpponend(opponent);
-        c.newGame();
-        GameController controller = c;
+    public Result newGame(String gameName, GameModel gameModel) {
+        GameModel  model = gameModel;
         if (gamesMap.containsKey(gameName)) {
-            controller = gamesMap.get(gameName);
+            model = gamesMap.get(gameName);
         }
+        boolean hasStartedGame = model.startGame();
         ObjectNode node = Json.newObject();
-        gamesMap.put(gameName, controller);
+        gamesMap.put(gameName, model);
+
         ObjectNode a = node.putObject("game");
         a.put("id", gameName);
+        a.put("isPlayerVsPlayer", model.isPlayerVsPlayer());
+        a.put("isWaitingForOpponent", model.isWaitingForOpponent());
+        a.put("gameStarted", hasStartedGame);
         a.putArray("game_field");
+
+        session("player", Integer.toString(model.getPlayer().hashCode()));
+        return ok(node);
+    }
+
+
+    public Result joinGame(String gameName) {
+        ObjectNode node = Json.newObject();
+        if (gamesMap.containsKey(gameName)) {
+            GameModel model = gamesMap.get(gameName);
+            model.joinGame(new Human("opponent"));
+            if (model.startGame()){
+                node.put("gameStarted", true);
+
+            }
+            session("player", Integer.toString(model.getOpponent().hashCode()));
+
+        }
         return ok(node);
     }
 
     public Result dropCoin(String gameName, int column) {
         ObjectNode node = Json.newObject();
+        String player =  session("player");
         if (gamesMap.containsKey(gameName)) {
-            GameController controller = gamesMap.get(gameName);
-            boolean success = controller.dropCoinWithSuccessFeedback(column);
-            if (success)
-                node.put("dropped", true);
-            else
-                node.put("dropped", false);
+            GameModel model = gamesMap.get(gameName);
+            if (model.isStarted()) {
+                Player p = model.getPlayerOnTurn();
+                Player pp = model.getPlayer();
+                Player op = model.getOpponent();
+                String hashcodePP = Integer.toString(pp.hashCode());
+                String hashcodeOP = Integer.toString(op.hashCode());
+                String hashcode = Integer.toString(p.hashCode());
+                if (player.equals(hashcode) || !model.isPlayerVsPlayer()) {
+                    boolean success = model.getGameController().dropCoinWithSuccessFeedback(column);
+                    if (success)
+                        node.put("dropped", true);
+                    else
+                        node.put("dropped", false);
+                }
+            }
         } else {
             node.put("dropped", false);
         }
@@ -121,9 +165,9 @@ public class Game extends Controller {
     @BodyParser.Of(BodyParser.Json.class)
     public Result getGameField(String gameName) {
         if (gamesMap.containsKey(gameName)) {
-            GameController controller = gamesMap.get(gameName);
+            GameModel model = gamesMap.get(gameName);
             ObjectNode node = Json.newObject();
-            node.put("game", gameFieldToJsonNode(gameName, controller));
+            node.put("game", gameFieldToJsonNode(gameName, model));
             return ok(node);
 
         }
@@ -134,7 +178,7 @@ public class Game extends Controller {
     public Result getGameFields() {
         ObjectNode node = Json.newObject();
         ArrayNode a = node.putArray("games");
-        for (Map.Entry<String, GameController> s : gamesMap.entrySet()) {
+        for (Map.Entry<String, GameModel> s : gamesMap.entrySet()) {
             a.add(gameFieldToJsonNode(s.getKey(), s.getValue()));
         }
         return ok(node);
@@ -143,8 +187,8 @@ public class Game extends Controller {
 
     @BodyParser.Of(BodyParser.Json.class)
     public Result getSavedGames() {
-        Collection<GameController> gc = gamesMap.values();
-        GameController controller = gc.iterator().next();
+        Collection<GameModel> gc = gamesMap.values();
+        IController controller = gc.iterator().next().getGameController();
         List<String> saveGames = controller.getAllSaveGameNames();
         JsonNode node = Json.toJson(saveGames);
         return ok(node);
@@ -152,9 +196,9 @@ public class Game extends Controller {
 
     public Result loadGame(String gameName, String loadGameName) {
         if (gamesMap.containsKey(gameName)) {
-            GameController controller = gamesMap.get(gameName);
+            GameModel model = gamesMap.get(gameName);
             SaveGame sg = saveGameDAO.loadSaveGame(loadGameName);
-            controller.setGameField(sg.getGameField());
+            model.getGameController().setGameField(sg.getGameField());
             ObjectNode node = Json.newObject();
             node.put("loaded", true);
             return ok(node);
@@ -166,7 +210,8 @@ public class Game extends Controller {
         System.out.println(gameName);
         System.out.println(saveGameName);
         if (gamesMap.containsKey(gameName)) {
-            GameController controller = gamesMap.get(gameName);
+            GameModel model = gamesMap.get(gameName);
+            IController controller = model.getGameController();
             SaveGame sg = new SaveGame(saveGameName, controller.getGameField().clone(), controller.getPlayer(), controller.getOpponend());
             saveGameDAO.saveGame(sg);
             ObjectNode node = Json.newObject();
@@ -179,7 +224,8 @@ public class Game extends Controller {
 
     public Result undo(String gameName){
         if (gamesMap.containsKey(gameName)) {
-            GameController controller = gamesMap.get(gameName);
+            GameModel model = gamesMap.get(gameName);
+            IController controller = model.getGameController();
             controller.undoStep();
             ObjectNode node = Json.newObject();
             node.put("undone", true);
@@ -190,7 +236,8 @@ public class Game extends Controller {
     }
     public Result redo(String gameName){
         if (gamesMap.containsKey(gameName)) {
-            GameController controller = gamesMap.get(gameName);
+            GameModel model = gamesMap.get(gameName);
+            IController controller = model.getGameController();
             controller.redoStep();
             ObjectNode node = Json.newObject();
             node.put("undone", true);
@@ -201,12 +248,16 @@ public class Game extends Controller {
     }
 
 
-    private ObjectNode gameFieldToJsonNode(String gameName, IController c) {
+    private ObjectNode gameFieldToJsonNode(String gameName, GameModel gameModel) {
         try {
+            IController c = gameModel.getGameController();
             Player[][] gameField = c.getGameField().getCopyOfGamefield();
             ArrayUtils.reverse(gameField);
             ObjectNode node = Json.newObject();
             node.put("id", gameName);
+            node.put("isPlayerVsPlayer", gameModel.isPlayerVsPlayer());
+            node.put("isWaitingForOpponent", gameModel.isWaitingForOpponent());
+            node.put("gameStarted", gameModel.isStarted());
             ArrayNode gameArrayNode = node.putArray("game_field");
             for (Player[] rows : gameField) {
                 ArrayNode rowsNode = gameArrayNode.addArray();
