@@ -49,7 +49,7 @@ public class Game extends Controller {
     private ISaveGameDAO saveGameDAO;
 
     @Inject
-    private Map<String, GameModel> gamesMap = new ConcurrentHashMap<>();
+    private Map<String, GameModel> gamesMap = new ConcurrentHashMap<String, GameModel>();
 
     @BodyParser.Of(BodyParser.Json.class)
     public Result newGameWithoutName() {
