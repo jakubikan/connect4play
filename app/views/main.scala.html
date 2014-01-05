@@ -6,14 +6,14 @@
     <head>
         <title>@title</title>
         <link rel="stylesheet" media="screen" href='@routes.Assets.at("stylesheets/main.css")'>
-        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.min.css"))'>
+        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.css"))'>
 
 
         <script type='text/javascript' src='@routes.Assets.at("javascripts/jquery-1.9.0.min.js")'></script>
-        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("js/bootstrap.min.js"))'></script>
-        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("handlebars.js"))'></script>
+        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("js/bootstrap.js"))'></script>
+        <script type='text/javascript' src='@routes.Assets.at("javascripts/handlebars-v1.1.2.js")'></script>
         <script type='text/javascript' src='@routes.Assets.at("javascripts/ember.js")'></script>
-        <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("ember-data.js"))'></script>
+        <script type='text/javascript' src='@routes.Assets.at("javascripts/ember-data.js")'></script>
 
         <script type="text/javascript">
 
@@ -51,48 +51,91 @@
             });
         </script>
 
+        <script>
+            Ember.Handlebars.helper('object', function(value, options) {
+
+            });
+
+        </script>
+
         <script src='@routes.Assets.at("javascripts/main.js")'></script>
 
         <script type="text/x-handlebars">    
             <div class="navbar navbar-static-top">      
                 <div class="navbar-inner">
-                    <a class="brand" href="#">Connectfour</a>        
+                    <a class="brand" href="#">Connectfour Plus</a>        
                     <form class="navbar-form pull-left">
-                        {{log this}}
                         {{input type="text" value=gameName placeholder="Enter Game Name" size="50" }}
-                        {{#link-to 'games.new' gameName class="btn"}} New {{/link-to}}
+                        <span>Play agains other Player {{input type="checkbox" name=pvp value=pvp checked=pvp}}</span>
+                        <button class="btn" {{action newGame gameName pvp}}>New</button>
                     </form>
 
-                    <form class="navbar-form pull-right">
-                        {{input type="text" value=saveGame placeholder="Enter Save/Load Name" size="50" }}
-                        {{#link-to 'games.save' saveGame class="btn"}} Save {{/link-to}}
-                        {{#link-to 'games.load' saveGame class="btn"}} Load {{/link-to}}
-                    </form>
                 </div>    
             </div>
             {{outlet}}
         </script>
 
-        <script type="text/x-handlebars" id="games/play">    
+        <script type="text/x-handlebars" id="games/index">    
             <div class="container">
-                {{log gameField}}
-                {{#each gameField}}
+                <h2>Play against other player !!</h2>
+                <ul>
+                    {{#each gameIndexController="games"}}
+                    {{#if this.isPlayerVsPlayer }}
+                    {{#if this.isWaitingForOpponent}}
+                        <li>
+                            <button class ="btn" {{action joinGame this.id view }}>
+                            Join Game
+                            </button>
+                            {{this.id}}
+                        </li>
+                    {{/if}}
+                    {{/if}}
+                    {{else}}
+                    No Games available
+                    {{/each}}
+                </ul>
+            </div>
+
+        </script>
+
+        <script type="text/x-handlebars" id="games/play">    
+            {{#unless  this.isPlayerVsPlayer}}
+            <div class="nav nav-list pull-right">
+                <button class ="btn" {{action undo view }}><i class="icon-arrow-left"></i>Undo</button>
+                <button class ="btn" {{action redo view }}>Redo <i class="icon-arrow-right"></i></button>
+                <form class="navbar-form" >
+                    {{input type="text" class="input-medium" value=saveGame placeholder="Enter Save/Load Name" size="50" }}
+                    <button class ="btn" {{action save saveGame view }}>
+                    Save
+                    </button>
+                    <button class ="btn" {{action load saveGame view}}>
+                    Load
+                    </button>
+                </form>
+            </div>
+            {{/unless}}
+            {{#if this.isPlayerVsPlayer}}
+                <div class="pull-right">{{this.playerOnTurn}} needs to drop a coin</div>
+            {{/if}}
+            <div class="container">
                     <div class="row-fluid">
+                        <button {{action "dropCoin" 0 view }} class="btn span1 offset2">Drop</button>
+                        <button {{action "dropCoin" 1 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 2 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 3 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 4 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 5 view }} class="btn span1 ">Drop</button>
+                        <button {{action "dropCoin" 6 view }} class="btn span1 ">Drop</button>
+                    </div>
+                    {{#each game_field}}
+                    <div class="row-fluid gamefield">
+                        <span class="span1 offset1"></span>
                         {{#each this}}
-                            {{this}}
+                        <span class="span1 {{this}} gametoken "></span>
                         {{/each}}
 
                     </div>
-                {{/each}}
-                <div class="row-fluid">
-                    <button {{action "dropCoin" 0 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 1 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 2 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 3 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 4 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 5 view }} class="btn span1">Drop</button>
-                    <button {{action "dropCoin" 6 view }} class="btn span1">Drop</button>
-                </div>
+                    {{/each}}
             </div>
         </script>
     </head>

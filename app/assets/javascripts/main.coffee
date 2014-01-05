@@ -1,98 +1,164 @@
 window.Connectfour = Ember.Application.create( {
   LOG_TRANSITIONS: true
+  LOG_ACTIVE_GENERATION: true,
+  LOG_MODULE_RESOLVER: true,
+  LOG_TRANSITIONS: true,
+  LOG_TRANSITIONS_INTERNAL: true,
+  LOG_VIEW_LOOKUPS: true,
+
 });
 
 Connectfour.Router.reopen {
   rootURL: '/api/'
 }
 
-
-
-Connectfour.Store = DS.Store.extend {
-  revision: 12
-}
-
-
-
 DS.RESTAdapter.reopen({
   namespace: 'api'
 });
 
+
 Connectfour.Router.map  ->
   @resource "games", ->
-    @route "new", {path: "new/:name"}
-    @route "play", {path: "/:name"}
+    @route "new", {path: "new/:id"}
+    @route "play", {path: "/:id"}
     @route "dropcoin", {path: ":name/dropCoin/:column"}
-    @route "save", {path: "save/:name"}
-    @route "load", {path: "load/:name"}
+    @route "save", {path: ":id/save/:saveGame"}
+    @route "load", {path: ":id/load/:saveGame"}
+  @route "saveGames"
 
-DS.RESTAdapter.registerTransform 'raw', {
-  deserialize: (serialized) ->
-    return serialized;
 
-  serialize: (deserialized) ->
-    return deserialized;
-}
 
 Connectfour.Game = DS.Model.extend {
-  name: DS.attr "string"
-  gameField: DS.attr "raw"
+  game_field: DS.attr ""
+  isPlayerVsPlayer: DS.attr "boolean"
+  isWaitingForOpponent: DS.attr "boolean"
+  gameStarted: DS.attr "boolean"
+  playerOnTurn: DS.attr ""
+
 }
 
-Connectfour.Games = DS.Model.extend {
-  games: DS.hasMany "Connectfour.Game"
+Connectfour.StandartActions = Ember.Route.extend {
+  actions: {
+    newGame: (gameName, pvp)  ->
+      params = {
+        id: gameName
+        isPlayerVsPlayer: pvp
+      }
+      @transitionTo("games.new", params);
+
+  }
 }
 
-Connectfour.GamesRoute = Ember.Route.extend {
-  model: (params) ->
+Connectfour.IndexRoute = Connectfour.StandartActions.extend {
+  model: ->
+    @transitionTo "games.index"
 }
 
 
+Connectfour.GamesIndexRoute = Connectfour.StandartActions.extend {
+  model: ->
+    @store.find "game"
+  actions: {
+    joinGame: (id, view) ->
+      $.ajax {
+        url:"/api/games/#{id}/joinGame"
+        async:false
+      }
+      @transitionTo "games.play", id
+  }
+  reload: =>
+    @store.find "game"
 
-Connectfour.GamesNewRoute = Ember.Route.extend {
+
+}
+
+
+Connectfour.GamesNewRoute = Connectfour.StandartActions.extend {
   model: (params)->
-    store = @get "store"
-    newGameObj = {
-      name: params.name
-      gameField: []
-    }
-    newGame = Connectfour.Game.createRecord (newGameObj)
-    newGame.save();
-    return newGame;
+    @store.createRecord "game", params
 
+  setupController: ( controller, model ) ->
+    route = this
+    m = @modelFor("gamesNew")
+    if typeof  m.save != 'function'
+      if !m.isPlayerVsPlayer
+        m.isPlayerVsPlayer = false;
+      m = @store.createRecord "game", m
+      route.transitionTo('games.play');
+
+    model = m.save().then((params) ->
+      route.transitionTo('games.play');
+    , ->
+      console.log "failing save", this
+    )
+
+}
+
+
+Connectfour.GamePoll = {
+  start: (func) ->
+    @timer = setInterval func.bind(this), 2000
+  stop: ->
+    clearInterval @timer
+
+};
+
+
+
+
+Connectfour.GamesPlayRoute = Connectfour.StandartActions.extend {
+  model: (params) ->
+    @store.find "game", params.id
   setupController: (controller, model) ->
-    controller.set 'model', model
+    controller.set("model", model)
+    Connectfour.GamePoll.start ->
+      model.reload();
+    model
 
-  afterModel: (params, a, b, c)->
-    store = @get "store"
-    game = store.find "game", a.params.name
-    @transitionTo "games.play", game
-
-}
-
-Connectfour.GamesLoadRoute = Ember.Route.extend {
-  model: (params) ->
-}
-
-
-Connectfour.GamesSaveRoute = Ember.Route.extend {
-  model: (params) ->
-}
-
-Connectfour.GamesPlayRoute = Ember.Route.extend {
-  model: (params) ->
-    store = @get "store"
-    return store.find "game", params.name
-  setupController: (controller, model) ->
-    controller.set('model', model);
   actions: {
     dropCoin: (column, view) ->
-      $.getJSON "/api/games/#{@currentModel.id}/dropcoin/#{column}"
-      view.propertyDidChange()
-      view.rerender()
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/dropcoin/#{column}"
+        async:false
+      }
+      @currentModel.reload()
+    save: (name)->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/save/#{name}"
+        async:false
+      }
+
+    load: (name)->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/load/#{name}"
+        async:false
+      }
+      @currentModel.reload()
+    undo: ->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/undo"
+        async:false
+      }
+      @currentModel.reload()
+
+    redo: ->
+      $.ajax {
+        url:"/api/games/#{@currentModel.id}/redo"
+        async:false
+      }
+      @currentModel.reload()
   }
 
 }
+
+
+Connectfour.GameRoute = Connectfour.StandartActions.extend {
+  model: (params) ->
+    @store.find "game", params.name
+
+}
+
+
 
 
 
