@@ -114,6 +114,9 @@
                 </form>
             </div>
             {{/unless}}
+            {{#if this.isPlayerVsPlayer}}
+                <div class="pull-right">{{this.playerOnTurn}} needs to drop a coin</div>
+            {{/if}}
             <div class="container">
                     <div class="row-fluid">
                         <button {{action "dropCoin" 0 view }} class="btn span1 offset2">Drop</button>

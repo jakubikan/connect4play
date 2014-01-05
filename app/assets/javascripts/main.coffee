@@ -5,11 +5,6 @@ window.Connectfour = Ember.Application.create( {
   LOG_TRANSITIONS: true,
   LOG_TRANSITIONS_INTERNAL: true,
   LOG_VIEW_LOOKUPS: true,
-  ready: () ->
-    setInterval(() ->
-      Connectfour.Game.refresh()
-    , 1000)
-    this._super()
 
 });
 
@@ -38,6 +33,7 @@ Connectfour.Game = DS.Model.extend {
   isPlayerVsPlayer: DS.attr "boolean"
   isWaitingForOpponent: DS.attr "boolean"
   gameStarted: DS.attr "boolean"
+  playerOnTurn: DS.attr ""
 
 }
 
@@ -70,6 +66,10 @@ Connectfour.GamesIndexRoute = Connectfour.StandartActions.extend {
       }
       @transitionTo "games.play", id
   }
+  reload: =>
+    @store.find "game"
+
+
 }
 
 
@@ -96,12 +96,11 @@ Connectfour.GamesNewRoute = Connectfour.StandartActions.extend {
 
 
 Connectfour.GamePoll = {
-  start:  ->
-    @timer = setInterval @onPoll.bind(this), 500
+  start: (func) ->
+    @timer = setInterval func.bind(this), 2000
   stop: ->
     clearInterval @timer
-  onPoll: ->
-    Connectfour.Game.refresh();
+
 };
 
 
@@ -110,6 +109,12 @@ Connectfour.GamePoll = {
 Connectfour.GamesPlayRoute = Connectfour.StandartActions.extend {
   model: (params) ->
     @store.find "game", params.id
+  setupController: (controller, model) ->
+    controller.set("model", model)
+    Connectfour.GamePoll.start ->
+      model.reload();
+    model
+
   actions: {
     dropCoin: (column, view) ->
       $.ajax {

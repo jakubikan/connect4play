@@ -83,6 +83,8 @@ public class Game extends Controller {
         }
         System.out.println(controller);
         GameModel gameModel;
+
+
         if (!isPlayerVsPlayer) {
             gameModel = new GameModel(controller);
         } else {
@@ -107,14 +109,24 @@ public class Game extends Controller {
         ObjectNode node = Json.newObject();
         gamesMap.put(gameName, model);
 
+
+        session("player", Integer.toString(model.getPlayer().hashCode()));
+
         ObjectNode a = node.putObject("game");
         a.put("id", gameName);
         a.put("isPlayerVsPlayer", model.isPlayerVsPlayer());
         a.put("isWaitingForOpponent", model.isWaitingForOpponent());
         a.put("gameStarted", hasStartedGame);
+
+        String sessionPlayer = session("player");
+        String playerOnTurn  = Integer.toString(model.getPlayerOnTurn().hashCode());
+
+        if (playerOnTurn.equals(sessionPlayer))
+            a.put("playerOnTurn", "you");
+        else
+            a.put("playerOnTurn", "opponent");
         a.putArray("game_field");
 
-        session("player", Integer.toString(model.getPlayer().hashCode()));
         return ok(node);
     }
 
@@ -258,6 +270,15 @@ public class Game extends Controller {
             node.put("isPlayerVsPlayer", gameModel.isPlayerVsPlayer());
             node.put("isWaitingForOpponent", gameModel.isWaitingForOpponent());
             node.put("gameStarted", gameModel.isStarted());
+
+            String sessionPlayer = session("player");
+            String playerOnTurn  = Integer.toString(gameModel.getPlayerOnTurn().hashCode());
+
+            if (playerOnTurn.equals(sessionPlayer))
+                node.put("playerOnTurn", "you");
+            else
+                node.put("playerOnTurn", "opponent");
+
             ArrayNode gameArrayNode = node.putArray("game_field");
             for (Player[] rows : gameField) {
                 ArrayNode rowsNode = gameArrayNode.addArray();
