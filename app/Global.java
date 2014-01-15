@@ -40,6 +40,7 @@ public class Global  extends GlobalSettings {
             protected void configure() {
                 bind(ISaveGameDAO.class).to(SaveGameDb4oDAO.class).in(Scopes.SINGLETON);
                 bind(IController.class).to(GameController.class).in(Scopes.NO_SCOPE);
+                bind(IHighScoreController.class).to(HighScoreController.class);
                 bind(new TypeLiteral<Map<String, GameModel>>(){})
                         .to(new TypeLiteral<ConcurrentHashMap<String, GameModel>>(){})
                         .in(Scopes.SINGLETON);
